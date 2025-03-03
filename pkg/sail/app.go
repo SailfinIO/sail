@@ -47,6 +47,11 @@ func (a *App) Use(mw server.Middleware) {
 	a.router.Use(mw)
 }
 
+// Router returns the application's router.
+func (a *App) Router() *Router {
+	return a.router
+}
+
 // Run initializes all modules and starts the HTTP server.
 // It also listens for interrupt signals to gracefully shut down.
 func (a *App) Run() {

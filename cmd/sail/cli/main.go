@@ -80,16 +80,17 @@ func createNewApp(appName string) error {
 
 	// Generate a go.mod file using the appName as the module name.
 	goModPath := filepath.Join(appName, "go.mod")
-	goModContent := fmt.Sprintf("module %s\n\ngo 1.24.0\n\nrequire github.com/SailfinIO/sail v0.0.2\n", appName)
+	goModContent := fmt.Sprintf("module %s\n\ngo 1.24.0\n\nrequire github.com/SailfinIO/sail v0.0.3\n", appName)
 	if err := os.WriteFile(goModPath, []byte(goModContent), 0644); err != nil {
 		return err
 	}
 
-	// Create the main.go file. Note: import path for app is now "<appName>/app"
+	// Create the main.go file. Note: the app package is imported using the module path ("<appName>/app").
 	mainFilePath := filepath.Join(appName, "main.go")
 	mainContent := `package main
 
 import (
+	"net/http"
 	"github.com/SailfinIO/sail/pkg/sail"
 	"` + appName + `/app"
 )
@@ -100,6 +101,10 @@ func main() {
 
 	// Register the AppModule.
 	appInstance.RegisterModule(&app.AppModule{})
+
+	// Create an AppController and register its routes.
+	controller := &app.AppController{}
+	controller.RegisterRoutes(appInstance.Router())
 
 	// Run the application.
 	appInstance.Run()
@@ -149,7 +154,7 @@ type AppController struct {
 }
 
 // RegisterRoutes registers the HTTP routes.
-func (ac *AppController) RegisterRoutes(router *server.Router) {
+func (ac *AppController) RegisterRoutes(router *sail.Router) {
 	router.Handle("/", http.HandlerFunc(ac.index))
 }
 
@@ -175,7 +180,7 @@ type AppService struct {
 }
 
 // NewAppService creates a new instance of AppService.
-func NewAppService(logger logger.Logger, config *sail.ConfigService) *AppService {
+func NewAppService(logger sail.Logger, config *sail.ConfigService) *AppService {
 	return &AppService{
 		BaseService: sail.NewBaseService(logger.WithContext("AppService"), config),
 	}
@@ -183,7 +188,7 @@ func NewAppService(logger logger.Logger, config *sail.ConfigService) *AppService
 
 // GetMessage returns a welcome message.
 func (as *AppService) GetMessage() string {
-	as.BaseService.Logger.Info("Retrieving welcome message")
+	as.Logger.Info("Retrieving welcome message")
 	return "Hello from AppService!"
 }
 `
@@ -238,7 +243,7 @@ type ` + componentName + `Controller struct {
 }
 
 // RegisterRoutes registers the HTTP routes.
-func (c *` + componentName + `Controller) RegisterRoutes(router *server.Router) {
+func (c *` + componentName + `Controller) RegisterRoutes(router *sail.Router) {
 	router.Handle("/` + strings.ToLower(componentName) + `", http.HandlerFunc(c.handle))
 }
 
@@ -264,7 +269,7 @@ type ` + componentName + `Service struct {
 }
 
 // New` + componentName + `Service creates a new instance of ` + componentName + `Service.
-func New` + componentName + `Service(logger logger.Logger, config *sail.ConfigService) *` + componentName + `Service {
+func New` + componentName + `Service(logger sail.Logger, config *sail.ConfigService) *` + componentName + `Service {
 	return &` + componentName + `Service{
 		BaseService: sail.NewBaseService(logger.WithContext("` + componentName + `Service"), config),
 	}
@@ -296,7 +301,7 @@ type ` + componentName + `Controller struct {
 }
 
 // RegisterRoutes registers HTTP routes.
-func (c *` + componentName + `Controller) RegisterRoutes(router *server.Router) {
+func (c *` + componentName + `Controller) RegisterRoutes(router *sail.Router) {
 	router.Handle("/` + strings.ToLower(componentName) + `", http.HandlerFunc(c.handle))
 }
 
@@ -328,7 +333,7 @@ type ` + componentName + `Service struct {
 }
 
 // New` + componentName + `Service creates a new instance of ` + componentName + `Service.
-func New` + componentName + `Service(logger logger.Logger, config *sail.ConfigService) *` + componentName + `Service {
+func New` + componentName + `Service(logger sail.Logger, config *sail.ConfigService) *` + componentName + `Service {
 	return &` + componentName + `Service{
 		BaseService: sail.NewBaseService(logger.WithContext("` + componentName + `Service"), config),
 	}
