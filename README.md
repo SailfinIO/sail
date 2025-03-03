@@ -1,13 +1,21 @@
 # Sail Framework
 
-Sail is a modular, NestJS-inspired framework for Go. It is designed to be minimal in external dependencies and easy to extend.
+Sail is a modular, NestJS-inspired framework for Go. It provides a lightweight and flexible platform for building web applications with minimal external dependencies.
 
 ## Project Structure
 
-- **cmd/sail/**: Entry point for the framework demo or CLI.
-- **internal/**: Core implementation details, including dependency injection, server, routing, and logging.
-- **pkg/sail/**: Public API for users to bootstrap and interact with the framework.
+- **cmd/sail/**: Entry point for the demo application or CLI.
+- **internal/**: Core implementation details including dependency injection, module lifecycle, HTTP server, routing, and logging.
+- **pkg/sail/**: Public API for bootstrapping and interacting with the framework.
 - **pkg/middleware/**: Optional middleware implementations (e.g., CORS).
+
+## Features
+
+- **Dependency Injection:** A simple, thread-safe DI container.
+- **Module Lifecycle Hooks:** Modules can implement initialization, bootstrap, and shutdown hooks.
+- **Graceful Server Shutdown:** Uses context-based shutdown for clean termination.
+- **Middleware Support:** Chain multiple middleware functions for flexible request handling.
+- **Config & Logging:** Environment‑driven configuration and log level support.
 
 ## Getting Started
 
