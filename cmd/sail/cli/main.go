@@ -80,7 +80,7 @@ func createNewApp(appName string) error {
 
 	// Generate a go.mod file using the appName as the module name.
 	goModPath := filepath.Join(appName, "go.mod")
-	goModContent := fmt.Sprintf("module %s\n\ngo 1.24.0\n\nrequire github.com/SailfinIO/sail v0.0.3\n", appName)
+	goModContent := fmt.Sprintf("module %s\n\ngo 1.24.0\n\nrequire github.com/SailfinIO/sail v0.0.4\n", appName)
 	if err := os.WriteFile(goModPath, []byte(goModContent), 0644); err != nil {
 		return err
 	}
@@ -90,7 +90,6 @@ func createNewApp(appName string) error {
 	mainContent := `package main
 
 import (
-	"net/http"
 	"github.com/SailfinIO/sail/pkg/sail"
 	"` + appName + `/app"
 )
@@ -99,13 +98,21 @@ func main() {
 	// Create a new Sail app instance.
 	appInstance := sail.NewApp()
 
+	// Create the AppModule.
+	appModule := &app.AppModule{}
+	
+	// Set the app instance in the module.
+	appModule.SetApp(appInstance)
+	
+	// Initialize the AppModule.
+	if err := appModule.OnModuleInit(); err != nil {
+		appInstance.Logger().Error("Failed to initialize AppModule: " + err.Error())
+		return
+	}
+	
 	// Register the AppModule.
-	appInstance.RegisterModule(&app.AppModule{})
-
-	// Create an AppController and register its routes.
-	controller := &app.AppController{}
-	controller.RegisterRoutes(appInstance.Router())
-
+	appInstance.RegisterModule(appModule)
+	
 	// Run the application.
 	appInstance.Run()
 }
@@ -124,13 +131,38 @@ func main() {
 	appModulePath := filepath.Join(appDir, "app.module.go")
 	appModuleContent := `package app
 
-// AppModule aggregates the application's components.
-type AppModule struct{}
+import (
+	"fmt"
+	"github.com/SailfinIO/sail/pkg/sail"
+)
 
-// OnModuleInit initializes the AppModule.
-// This is where you can register controllers, services, or submodules.
+// AppModule aggregates the application's components.
+type AppModule struct {
+	Controller *AppController
+	Service    *AppService
+	app        *sail.App // store a pointer to the app instance
+}
+
+// SetApp sets the app instance for the module.
+func (m *AppModule) SetApp(app *sail.App) {
+	m.app = app
+}
+
+// OnModuleInit initializes the AppModule by creating and registering the controller
+// (and optionally the service) using the stored app instance.
+// This signature now matches the core.Module interface.
 func (m *AppModule) OnModuleInit() error {
-	// TODO: Initialize your application's components.
+	if m.app == nil {
+		return fmt.Errorf("app instance not set")
+	}
+	
+	// Initialize your components.
+	m.Controller = &AppController{}
+	m.Service = NewAppService(sail.NewLogger().WithContext("AppService"), sail.NewConfigService())
+	
+	// Register the controller's routes with the app's router.
+	m.Controller.RegisterRoutes(m.app.Router())
+	
 	return nil
 }
 `
@@ -153,7 +185,7 @@ type AppController struct {
 	sail.BaseController
 }
 
-// RegisterRoutes registers the HTTP routes.
+// RegisterRoutes registers the HTTP routes for the AppController.
 func (ac *AppController) RegisterRoutes(router *sail.Router) {
 	router.Handle("/", http.HandlerFunc(ac.index))
 }

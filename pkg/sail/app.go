@@ -52,6 +52,11 @@ func (a *App) Router() *Router {
 	return a.router
 }
 
+// Logger returns the application's logger.
+func (a *App) Logger() Logger {
+	return a.logger
+}
+
 // Run initializes all modules and starts the HTTP server.
 // It also listens for interrupt signals to gracefully shut down.
 func (a *App) Run() {
