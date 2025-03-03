@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // main serves as the CLI entry point.
@@ -72,34 +73,119 @@ Commands:
 
 // createNewApp scaffolds a new application.
 func createNewApp(appName string) error {
-	// Create the app directory.
+	// Create the application directory.
 	if err := os.Mkdir(appName, 0755); err != nil {
 		return err
 	}
 
-	// Create a basic main.go file.
-	mainFile := filepath.Join(appName, "main.go")
+	// Create the main.go file.
+	mainFilePath := filepath.Join(appName, "main.go")
 	mainContent := `package main
 
 import (
-	"fmt"
+	"github.com/SailfinIO/sail/pkg/sail"
+	"app"
 )
 
 func main() {
-	fmt.Println("Welcome to ` + appName + `!")
+	// Create a new Sail app instance.
+	appInstance := sail.NewApp()
+
+	// Register the AppModule.
+	appInstance.RegisterModule(&app.AppModule{})
+
+	// Run the application.
+	appInstance.Run()
 }
 `
-	if err := os.WriteFile(mainFile, []byte(mainContent), 0644); err != nil {
+	if err := os.WriteFile(mainFilePath, []byte(mainContent), 0644); err != nil {
 		return err
 	}
 
-	// Create additional directories for modules, controllers, and services.
-	dirs := []string{"modules", "controllers", "services"}
-	for _, dir := range dirs {
-		path := filepath.Join(appName, dir)
-		if err := os.Mkdir(path, 0755); err != nil {
-			return err
-		}
+	// Create the "app" directory.
+	appDir := filepath.Join(appName, "app")
+	if err := os.Mkdir(appDir, 0755); err != nil {
+		return err
+	}
+
+	// Create app.module.go.
+	appModulePath := filepath.Join(appDir, "app.module.go")
+	appModuleContent := `package app
+
+import "github.com/SailfinIO/sail/pkg/sail"
+
+// AppModule aggregates the application's components.
+type AppModule struct{}
+
+// OnModuleInit initializes the AppModule.
+// This is where you can register controllers, services, or submodules.
+func (m *AppModule) OnModuleInit() error {
+	// Example: initialize your AppController and register its routes.
+	// (This could be done via a global router or dependency injection in your implementation.)
+	return nil
+}
+`
+	if err := os.WriteFile(appModulePath, []byte(appModuleContent), 0644); err != nil {
+		return err
+	}
+
+	// Create app.controller.go.
+	appControllerPath := filepath.Join(appDir, "app.controller.go")
+	appControllerContent := `package app
+
+import (
+	"net/http"
+	"github.com/SailfinIO/sail/pkg/sail"
+	"github.com/SailfinIO/sail/internal/server"
+)
+
+// AppController handles HTTP requests for the application.
+type AppController struct {
+	sail.BaseController
+}
+
+// RegisterRoutes registers the HTTP routes.
+func (ac *AppController) RegisterRoutes(router *server.Router) {
+	router.Handle("/", http.HandlerFunc(ac.index))
+}
+
+func (ac *AppController) index(w http.ResponseWriter, r *http.Request) {
+	ac.WriteJSON(w, map[string]string{"message": "Welcome to your Sail application!"})
+}
+`
+	if err := os.WriteFile(appControllerPath, []byte(appControllerContent), 0644); err != nil {
+		return err
+	}
+
+	// Create app.service.go.
+	appServicePath := filepath.Join(appDir, "app.service.go")
+	appServiceContent := `package app
+
+import (
+	"github.com/SailfinIO/sail/pkg/sail"
+	"github.com/SailfinIO/sail/internal/logger"
+)
+
+// AppService encapsulates business logic for the application.
+type AppService struct {
+	sail.BaseService
+}
+
+// NewAppService creates a new instance of AppService.
+func NewAppService(logger logger.Logger, config *sail.ConfigService) *AppService {
+	return &AppService{
+		BaseService: sail.NewBaseService(logger.WithContext("AppService"), config),
+	}
+}
+
+// GetMessage returns a welcome message.
+func (as *AppService) GetMessage() string {
+	as.Logger.Info("Retrieving welcome message")
+	return "Hello from AppService!"
+}
+`
+	if err := os.WriteFile(appServicePath, []byte(appServiceContent), 0644); err != nil {
+		return err
 	}
 
 	return nil
@@ -107,43 +193,154 @@ func main() {
 
 // generateComponent scaffolds a new component based on its type.
 func generateComponent(componentType, componentName string) error {
-	var dir, content string
-
 	switch componentType {
 	case "module":
-		dir = "modules"
-		content = `package modules
+		// Create a directory for the module inside the modules directory.
+		moduleDir := filepath.Join("modules", componentName)
+		if err := os.MkdirAll(moduleDir, 0755); err != nil {
+			return err
+		}
 
-// ` + componentName + ` module implementation.
+		// Generate the module file.
+		moduleFile := filepath.Join(moduleDir, strings.ToLower(componentName)+".module.go")
+		moduleContent := `package ` + strings.ToLower(componentName) + `
+
+import "github.com/SailfinIO/sail"
+
+// ` + componentName + `Module is a basic module implementation.
+type ` + componentName + `Module struct{}
+
+// OnModuleInit initializes the module.
+func (m *` + componentName + `Module) OnModuleInit() error {
+	// TODO: Implement module initialization.
+	return nil
+}
 `
+		if err := os.WriteFile(moduleFile, []byte(moduleContent), 0644); err != nil {
+			return err
+		}
+
+		// Generate the controller file.
+		controllerFile := filepath.Join(moduleDir, strings.ToLower(componentName)+".controller.go")
+		controllerContent := `package ` + strings.ToLower(componentName) + `
+
+import (
+	"net/http"
+	"github.com/SailfinIO/sail"
+	"github.com/SailfinIO/sail/internal/server"
+)
+
+// ` + componentName + `Controller handles HTTP requests for the ` + componentName + ` module.
+type ` + componentName + `Controller struct {
+	sail.BaseController
+}
+
+// RegisterRoutes registers the HTTP routes.
+func (c *` + componentName + `Controller) RegisterRoutes(router *server.Router) {
+	router.Handle("/` + strings.ToLower(componentName) + `", http.HandlerFunc(c.handle))
+}
+
+func (c *` + componentName + `Controller) handle(w http.ResponseWriter, r *http.Request) {
+	c.WriteJSON(w, map[string]string{"message": "` + componentName + ` route"})
+}
+`
+		if err := os.WriteFile(controllerFile, []byte(controllerContent), 0644); err != nil {
+			return err
+		}
+
+		// Generate the service file.
+		serviceFile := filepath.Join(moduleDir, strings.ToLower(componentName)+".service.go")
+		serviceContent := `package ` + strings.ToLower(componentName) + `
+
+import (
+	"github.com/SailfinIO/sail"
+	"github.com/SailfinIO/sail/internal/logger"
+)
+
+// ` + componentName + `Service encapsulates business logic for the ` + componentName + ` module.
+type ` + componentName + `Service struct {
+	sail.BaseService
+}
+
+// New` + componentName + `Service creates a new instance of ` + componentName + `Service.
+func New` + componentName + `Service(logger logger.Logger, config *sail.ConfigService) *` + componentName + `Service {
+	return &` + componentName + `Service{
+		BaseService: sail.NewBaseService(logger.WithContext("` + componentName + `Service"), config),
+	}
+}
+`
+		if err := os.WriteFile(serviceFile, []byte(serviceContent), 0644); err != nil {
+			return err
+		}
+
+		return nil
+
 	case "controller":
-		dir = "controllers"
-		content = `package controllers
+		// For a standalone controller, create it under controllers directory.
+		controllerDir := "controllers"
+		if err := os.MkdirAll(controllerDir, 0755); err != nil {
+			return err
+		}
+		fileName := filepath.Join(controllerDir, componentName+".go")
+		content := `package controllers
 
-// ` + componentName + ` controller implementation.
+import (
+	"net/http"
+	"github.com/SailfinIO/sail"
+	"github.com/SailfinIO/sail/internal/server"
+)
+
+// ` + componentName + `Controller is a basic controller implementation.
+type ` + componentName + `Controller struct {
+	sail.BaseController
+}
+
+// RegisterRoutes registers HTTP routes.
+func (c *` + componentName + `Controller) RegisterRoutes(router *server.Router) {
+	router.Handle("/` + strings.ToLower(componentName) + `", http.HandlerFunc(c.handle))
+}
+
+func (c *` + componentName + `Controller) handle(w http.ResponseWriter, r *http.Request) {
+	c.WriteJSON(w, map[string]string{"message": "` + componentName + ` controller route"})
+}
 `
+		if err := os.WriteFile(fileName, []byte(content), 0644); err != nil {
+			return err
+		}
+		return nil
+
 	case "service":
-		dir = "services"
-		content = `package services
+		// For a standalone service, create it under services directory.
+		serviceDir := "services"
+		if err := os.MkdirAll(serviceDir, 0755); err != nil {
+			return err
+		}
+		fileName := filepath.Join(serviceDir, componentName+".go")
+		content := `package services
 
-// ` + componentName + ` service implementation.
+import (
+	"github.com/SailfinIO/sail"
+	"github.com/SailfinIO/sail/internal/logger"
+)
+
+// ` + componentName + `Service is a basic service implementation.
+type ` + componentName + `Service struct {
+	sail.BaseService
+}
+
+// New` + componentName + `Service creates a new instance of ` + componentName + `Service.
+func New` + componentName + `Service(logger logger.Logger, config *sail.ConfigService) *` + componentName + `Service {
+	return &` + componentName + `Service{
+		BaseService: sail.NewBaseService(logger.WithContext("` + componentName + `Service"), config),
+	}
+}
 `
+		if err := os.WriteFile(fileName, []byte(content), 0644); err != nil {
+			return err
+		}
+		return nil
+
 	default:
 		return fmt.Errorf("unknown component type: %s", componentType)
 	}
-
-	// Create the directory if it does not exist.
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.Mkdir(dir, 0755); err != nil {
-			return err
-		}
-	}
-
-	// Create the file for the component.
-	fileName := filepath.Join(dir, componentName+".go")
-	if err := os.WriteFile(fileName, []byte(content), 0644); err != nil {
-		return err
-	}
-
-	return nil
 }
