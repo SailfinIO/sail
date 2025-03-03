@@ -80,7 +80,7 @@ func createNewApp(appName string) error {
 
 	// Generate a go.mod file using the appName as the module name.
 	goModPath := filepath.Join(appName, "go.mod")
-	goModContent := fmt.Sprintf("module %s\n\ngo 1.24.0\n\nrequire github.com/SailfinIO/sail v0.0.1\n", appName)
+	goModContent := fmt.Sprintf("module %s\n\ngo 1.24.0\n\nrequire github.com/SailfinIO/sail v0.0.2\n", appName)
 	if err := os.WriteFile(goModPath, []byte(goModContent), 0644); err != nil {
 		return err
 	}
