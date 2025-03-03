@@ -140,7 +140,6 @@ func (m *AppModule) OnModuleInit() error {
 import (
 	"net/http"
 
-	"github.com/SailfinIO/sail/internal/server"
 	"github.com/SailfinIO/sail/pkg/sail"
 )
 
@@ -167,7 +166,6 @@ func (ac *AppController) index(w http.ResponseWriter, r *http.Request) {
 	appServiceContent := `package app
 
 import (
-	"github.com/SailfinIO/sail/internal/logger"
 	"github.com/SailfinIO/sail/pkg/sail"
 )
 
@@ -232,7 +230,6 @@ func (m *` + componentName + `Module) OnModuleInit() error {
 import (
 	"net/http"
 	"github.com/SailfinIO/sail"
-	"github.com/SailfinIO/sail/internal/server"
 )
 
 // ` + componentName + `Controller handles HTTP requests for the ` + componentName + ` module.
@@ -259,7 +256,6 @@ func (c *` + componentName + `Controller) handle(w http.ResponseWriter, r *http.
 
 import (
 	"github.com/SailfinIO/sail"
-	"github.com/SailfinIO/sail/internal/logger"
 )
 
 // ` + componentName + `Service encapsulates business logic for the ` + componentName + ` module.
@@ -292,7 +288,6 @@ func New` + componentName + `Service(logger logger.Logger, config *sail.ConfigSe
 import (
 	"net/http"
 	"github.com/SailfinIO/sail"
-	"github.com/SailfinIO/sail/internal/server"
 )
 
 // ` + componentName + `Controller is a basic controller implementation.
@@ -325,7 +320,6 @@ func (c *` + componentName + `Controller) handle(w http.ResponseWriter, r *http.
 
 import (
 	"github.com/SailfinIO/sail"
-	"github.com/SailfinIO/sail/internal/logger"
 )
 
 // ` + componentName + `Service is a basic service implementation.
