@@ -39,6 +39,10 @@ func NewApp() *App {
 
 // RegisterModule registers a module with the application.
 func (a *App) RegisterModule(module core.Module) {
+	// If the module implements SetApp, set the app instance.
+	if mod, ok := module.(interface{ SetApp(*App) }); ok {
+		mod.SetApp(a)
+	}
 	a.moduleRegistry.Register(module)
 }
 

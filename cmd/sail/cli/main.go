@@ -80,7 +80,7 @@ func createNewApp(appName string) error {
 
 	// Generate a go.mod file using the appName as the module name.
 	goModPath := filepath.Join(appName, "go.mod")
-	goModContent := fmt.Sprintf("module %s\n\ngo 1.24.0\n\nrequire github.com/SailfinIO/sail v0.0.4\n", appName)
+	goModContent := fmt.Sprintf("module %s\n\ngo 1.24.0\n\nrequire github.com/SailfinIO/sail v0.0.5\n", appName)
 	if err := os.WriteFile(goModPath, []byte(goModContent), 0644); err != nil {
 		return err
 	}
@@ -100,19 +100,11 @@ func main() {
 
 	// Create the AppModule.
 	appModule := &app.AppModule{}
-	
-	// Set the app instance in the module.
-	appModule.SetApp(appInstance)
-	
-	// Initialize the AppModule.
-	if err := appModule.OnModuleInit(); err != nil {
-		appInstance.Logger().Error("Failed to initialize AppModule: " + err.Error())
-		return
-	}
-	
+
 	// Register the AppModule.
+	// The framework's RegisterModule will automatically call SetApp on it.
 	appInstance.RegisterModule(appModule)
-	
+
 	// Run the application.
 	appInstance.Run()
 }
@@ -140,7 +132,7 @@ import (
 type AppModule struct {
 	Controller *AppController
 	Service    *AppService
-	app        *sail.App // store a pointer to the app instance
+	app        *sail.App // this will be set by the framework
 }
 
 // SetApp sets the app instance for the module.
@@ -148,21 +140,17 @@ func (m *AppModule) SetApp(app *sail.App) {
 	m.app = app
 }
 
-// OnModuleInit initializes the AppModule by creating and registering the controller
-// (and optionally the service) using the stored app instance.
-// This signature now matches the core.Module interface.
+// OnModuleInit initializes the AppModule.
+// It is called once by the framework's module registry.
 func (m *AppModule) OnModuleInit() error {
 	if m.app == nil {
 		return fmt.Errorf("app instance not set")
 	}
-	
 	// Initialize your components.
 	m.Controller = &AppController{}
 	m.Service = NewAppService(sail.NewLogger().WithContext("AppService"), sail.NewConfigService())
-	
-	// Register the controller's routes with the app's router.
+	// Register the controller's routes using the app's router.
 	m.Controller.RegisterRoutes(m.app.Router())
-	
 	return nil
 }
 `
