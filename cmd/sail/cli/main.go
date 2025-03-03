@@ -78,13 +78,20 @@ func createNewApp(appName string) error {
 		return err
 	}
 
-	// Create the main.go file.
+	// Generate a go.mod file using the appName as the module name.
+	goModPath := filepath.Join(appName, "go.mod")
+	goModContent := fmt.Sprintf("module %s\n\ngo 1.24.0\n\nrequire github.com/SailfinIO/sail v0.0.1\n", appName)
+	if err := os.WriteFile(goModPath, []byte(goModContent), 0644); err != nil {
+		return err
+	}
+
+	// Create the main.go file. Note: import path for app is now "<appName>/app"
 	mainFilePath := filepath.Join(appName, "main.go")
 	mainContent := `package main
 
 import (
 	"github.com/SailfinIO/sail/pkg/sail"
-	"app"
+	"` + appName + `/app"
 )
 
 func main() {
@@ -112,16 +119,13 @@ func main() {
 	appModulePath := filepath.Join(appDir, "app.module.go")
 	appModuleContent := `package app
 
-import "github.com/SailfinIO/sail/pkg/sail"
-
 // AppModule aggregates the application's components.
 type AppModule struct{}
 
 // OnModuleInit initializes the AppModule.
 // This is where you can register controllers, services, or submodules.
 func (m *AppModule) OnModuleInit() error {
-	// Example: initialize your AppController and register its routes.
-	// (This could be done via a global router or dependency injection in your implementation.)
+	// TODO: Initialize your application's components.
 	return nil
 }
 `
@@ -135,8 +139,9 @@ func (m *AppModule) OnModuleInit() error {
 
 import (
 	"net/http"
-	"github.com/SailfinIO/sail/pkg/sail"
+
 	"github.com/SailfinIO/sail/internal/server"
+	"github.com/SailfinIO/sail/pkg/sail"
 )
 
 // AppController handles HTTP requests for the application.
@@ -162,8 +167,8 @@ func (ac *AppController) index(w http.ResponseWriter, r *http.Request) {
 	appServiceContent := `package app
 
 import (
-	"github.com/SailfinIO/sail/pkg/sail"
 	"github.com/SailfinIO/sail/internal/logger"
+	"github.com/SailfinIO/sail/pkg/sail"
 )
 
 // AppService encapsulates business logic for the application.
@@ -180,7 +185,7 @@ func NewAppService(logger logger.Logger, config *sail.ConfigService) *AppService
 
 // GetMessage returns a welcome message.
 func (as *AppService) GetMessage() string {
-	as.Logger.Info("Retrieving welcome message")
+	as.BaseService.Logger.Info("Retrieving welcome message")
 	return "Hello from AppService!"
 }
 `
