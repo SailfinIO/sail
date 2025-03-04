@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*" # Matches final releases
+      - "v*.*.*-*" # Matches prerelease tags (alpha, beta, rc, etc.)
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24.0"
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Build CLI binary
+        working-directory: cmd/sail/cli
+        run: |
+          mkdir -p dist
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+          go build -ldflags "-X 'github.com/SailfinIO/sail/cmd/sail/version.Version=${GITHUB_REF##*/}'" \
+          -o dist/sail-${{ matrix.goos }}-${{ matrix.goarch }} .
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
+
+      - name: Upload CLI Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: cmd/sail/dist/sail-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_name: sail-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_content_type: application/octet-stream
