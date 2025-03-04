@@ -28,7 +28,7 @@ jobs:
         run: go test ./...
 
       - name: Build CLI binary
-        working-directory: cmd/sail/cli
+        working-directory: cmd/sail
         run: |
           mkdir -p dist
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
