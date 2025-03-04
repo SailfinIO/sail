@@ -50,6 +50,15 @@ jobs:
           draft: false
           prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
 
+      - name: Get release upload URL
+        id: get_release
+        run: |
+          # Retrieve the release's upload URL (strip off the "{?name,label}" part)
+          url=$(gh release view "${GITHUB_REF}" --json uploadUrl --jq .uploadUrl | sed 's/{.*}//')
+          echo "release_upload_url=${url}" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
       - name: Upload CLI Binary
         uses: actions/upload-release-asset@v1
         env:
