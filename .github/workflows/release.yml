@@ -39,17 +39,6 @@ jobs:
           go build -ldflags "-X 'github.com/SailfinIO/sail/cmd/sail/version.Version=${GITHUB_REF##*/}'" \
           -o dist/sail-${{ matrix.goos }}-${{ matrix.goarch }} .
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
-
       - name: Get release upload URL
         id: get_release
         run: |
@@ -64,7 +53,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ steps.get_release.outputs.release_upload_url }}
           asset_path: cmd/sail/dist/sail-${{ matrix.goos }}-${{ matrix.goarch }}
           asset_name: sail-${{ matrix.goos }}-${{ matrix.goarch }}
           asset_content_type: application/octet-stream
