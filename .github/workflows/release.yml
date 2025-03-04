@@ -45,7 +45,7 @@ jobs:
           # Strip off "refs/tags/" to get the tag name
           tag=${GITHUB_REF##*/}
           echo "Using tag: $tag"
-          # Retrieve the release's upload URL (strip off the "{?name,label}" part)
+          # Retrieve the release's upload URL and strip the placeholder part
           url=$(gh release view "$tag" --json uploadUrl --jq .uploadUrl | sed 's/{.*}//')
           echo "release_upload_url=${url}" >> $GITHUB_OUTPUT
         env:
