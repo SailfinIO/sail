@@ -42,8 +42,11 @@ jobs:
       - name: Get release upload URL
         id: get_release
         run: |
+          # Strip off "refs/tags/" to get the tag name
+          tag=${GITHUB_REF##*/}
+          echo "Using tag: $tag"
           # Retrieve the release's upload URL (strip off the "{?name,label}" part)
-          url=$(gh release view "${GITHUB_REF}" --json uploadUrl --jq .uploadUrl | sed 's/{.*}//')
+          url=$(gh release view "$tag" --json uploadUrl --jq .uploadUrl | sed 's/{.*}//')
           echo "release_upload_url=${url}" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
