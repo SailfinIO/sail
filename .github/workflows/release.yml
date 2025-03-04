@@ -110,7 +110,7 @@ jobs:
       - name: Package CLI binary (Windows)
         if: matrix.goos == 'windows'
         run: |
-          powershell -Command "Compress-Archive -Path cmd/sail/dist/sail-${{ matrix.goos }}-${{ matrix.goarch }} -DestinationPath sail-${{ matrix.goos }}-${{ matrix.goarch }}.zip"
+          zip -j sail-${{ matrix.goos }}-${{ matrix.goarch }}.zip cmd/sail/dist/sail-${{ matrix.goos }}-${{ matrix.goarch }}
 
       - name: List files
         run: ls -l
