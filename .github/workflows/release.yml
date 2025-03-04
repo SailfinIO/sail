@@ -51,12 +51,34 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Upload CLI Binary
+      - name: Package CLI binary (Linux/macOS)
+        if: matrix.goos != 'windows'
+        run: |
+          tar -czf sail-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz -C cmd/sail/dist sail-${{ matrix.goos }}-${{ matrix.goarch }}
+
+      - name: Package CLI binary (Windows)
+        if: matrix.goos == 'windows'
+        run: |
+          powershell -Command "Compress-Archive -Path cmd/sail/dist/sail-${{ matrix.goos }}-${{ matrix.goarch }} -DestinationPath sail-${{ matrix.goos }}-${{ matrix.goarch }}.zip"
+
+      - name: Upload CLI Binary (Linux/macOS)
+        if: matrix.goos != 'windows'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           upload_url: ${{ steps.get_release.outputs.release_upload_url }}
-          asset_path: cmd/sail/dist/sail-${{ matrix.goos }}-${{ matrix.goarch }}
-          asset_name: sail-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_path: sail-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          asset_name: sail-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          asset_content_type: application/octet-stream
+
+      - name: Upload CLI Binary (Windows)
+        if: matrix.goos == 'windows'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.release_upload_url }}
+          asset_path: sail-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+          asset_name: sail-${{ matrix.goos }}-${{ matrix.goarch }}.zip
           asset_content_type: application/octet-stream
