@@ -65,9 +65,9 @@ jobs:
         run: |
           tag=${GITHUB_REF##*/}
           echo "Retrieving release for tag: $tag"
-          # Retrieve the release's upload URL and remove the "{?name,label}" part
-          url=$(gh release view "$tag" --json uploadUrl --jq .uploadUrl | sed 's/{.*}//')
-          echo "Clean upload URL: $url"
+          # Retrieve the release's upload URL without stripping the placeholder
+          url=$(gh release view "$tag" --json uploadUrl --jq .uploadUrl)
+          echo "Upload URL: $url"
           echo "release_upload_url=${url}" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -117,7 +117,7 @@ jobs:
 
       - name: Upload CLI Binary (Linux/macOS)
         if: matrix.goos != 'windows'
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
@@ -128,7 +128,7 @@ jobs:
 
       - name: Upload CLI Binary (Windows)
         if: matrix.goos == 'windows'
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
